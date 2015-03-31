@@ -25,6 +25,7 @@ import org.wso2.carbon.device.mgt.common.spi.DeviceManagerService;
 import org.wso2.carbon.device.mgt.mobile.dao.MobileDeviceManagementDAOException;
 import org.wso2.carbon.device.mgt.mobile.dao.MobileDeviceManagementDAOFactory;
 import org.wso2.carbon.device.mgt.mobile.dto.MobileDevice;
+import org.wso2.carbon.device.mgt.mobile.impl.ios.IOSMobileOperationManager;
 import org.wso2.carbon.device.mgt.mobile.util.MobileDeviceManagementUtil;
 
 import java.util.List;
@@ -35,6 +36,11 @@ import java.util.List;
 public class WindowsDeviceManagerService implements DeviceManagerService {
 
 	private static final Log log = LogFactory.getLog(WindowsDeviceManagerService.class);
+	private OperationManager operationManager;
+
+	public WindowsDeviceManagerService() {
+		this.operationManager = new WindowsMobileOperationManager();
+	}
 
 	@Override
 	public String getProviderType() {
@@ -59,28 +65,59 @@ public class WindowsDeviceManagerService implements DeviceManagerService {
 
 	@Override
 	public boolean modifyEnrollment(Device device) throws DeviceManagementException {
-		return false;
+		boolean status;
+		MobileDevice mobileDevice = MobileDeviceManagementUtil.convertToMobileDevice(device);
+		try {
+			if (log.isDebugEnabled()) {
+				log.debug("Modifying the Windows device enrollment data");
+			}
+			status = MobileDeviceManagementDAOFactory.getMobileDeviceDAO()
+					.updateMobileDevice(mobileDevice);
+		} catch (MobileDeviceManagementDAOException e) {
+			String msg = "Error while updating the enrollment of the Windows device : " +
+					device.getDeviceIdentifier();
+			log.error(msg, e);
+			throw new DeviceManagementException(msg, e);
+		}
+		return status;
 	}
 
 	@Override
 	public boolean disenrollDevice(DeviceIdentifier deviceId) throws DeviceManagementException {
-		return false;
+		return true;
 	}
 
 	@Override
 	public boolean isEnrolled(DeviceIdentifier deviceId) throws DeviceManagementException {
-		return false;
+		boolean isEnrolled = false;
+		try {
+			if (log.isDebugEnabled()) {
+				log.debug("Checking the enrollment of Windows device : " + deviceId.getId());
+			}
+			MobileDevice mobileDevice =
+					MobileDeviceManagementDAOFactory.getMobileDeviceDAO().getMobileDevice(
+							deviceId.getId());
+			if (mobileDevice != null) {
+				isEnrolled = true;
+			}
+		} catch (MobileDeviceManagementDAOException e) {
+			String msg = "Error while checking the enrollment status of Windows device : " +
+					deviceId.getId();
+			log.error(msg, e);
+			throw new DeviceManagementException(msg, e);
+		}
+		return isEnrolled;
 	}
 
 	@Override
 	public boolean isActive(DeviceIdentifier deviceId) throws DeviceManagementException {
-		return false;
+		return true;
 	}
 
 	@Override
 	public boolean setActive(DeviceIdentifier deviceId, boolean status)
 			throws DeviceManagementException {
-		return false;
+		return true;
 	}
 
 	public List<Device> getAllDevices() throws DeviceManagementException {
@@ -89,23 +126,36 @@ public class WindowsDeviceManagerService implements DeviceManagerService {
 
 	@Override
 	public Device getDevice(DeviceIdentifier deviceId) throws DeviceManagementException {
-		return null;
+		Device device;
+		try {
+			if (log.isDebugEnabled()) {
+				log.debug("Getting the details of Windows device : " + deviceId.getId());
+			}
+			MobileDevice mobileDevice = MobileDeviceManagementDAOFactory.getMobileDeviceDAO().
+					getMobileDevice(deviceId.getId());
+			device = MobileDeviceManagementUtil.convertToDevice(mobileDevice);
+		} catch (MobileDeviceManagementDAOException e) {
+			String msg = "Error while fetching the Windows device : " + deviceId.getId();
+			log.error(msg, e);
+			throw new DeviceManagementException(msg, e);
+		}
+		return device;
 	}
 
 	@Override
 	public boolean setOwnership(DeviceIdentifier deviceId, String ownershipType)
 			throws DeviceManagementException {
-		return false;
+		return true;
 	}
 
 	@Override
 	public OperationManager getOperationManager() throws DeviceManagementException {
-		return null;
+		return operationManager;
 	}
 
 	@Override
 	public boolean updateDeviceInfo(Device device) throws DeviceManagementException {
-		return false;
+		return true;
 	}
 
 }
